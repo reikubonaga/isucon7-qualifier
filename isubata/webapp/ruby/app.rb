@@ -46,8 +46,19 @@ class App < Sinatra::Base
       "channel:#{channel_id}"
     end
 
+    def channel_key
+
     def get_channel(channel_id)
       redis.get(channel_key(channel_id))
+    end
+
+    def get_all_channels
+      db.query('SELECT id FROM channel').to_a
+      redis.get(channel_all_key)
+    end
+
+    def get_all_channels_order_by_id
+      db.query('SELECT * FROM channel ORDER BY id').to_a
     end
   end
 
@@ -170,7 +181,7 @@ class App < Sinatra::Base
 
     sleep 1.0
 
-    rows = db.query('SELECT id FROM channel').to_a
+    rows = get_all_channels
     channel_ids = rows.map { |row| row['id'] }
 
     channel_message_counts = get_channel_message_counts(channel_ids)
@@ -416,7 +427,7 @@ class App < Sinatra::Base
   end
 
   def get_channel_list_info(focus_channel_id = nil)
-    channels = db.query('SELECT * FROM channel ORDER BY id').to_a
+    channels = get_all_channels_order_by_id
     description = ''
     channels.each do |channel|
       if channel['id'] == focus_channel_id
