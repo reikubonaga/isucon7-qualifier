@@ -147,8 +147,7 @@ class App < Sinatra::Base
     channel_id = params[:channel_id].to_i
     last_message_id = params[:last_message_id].to_i
 
-    statement = db.prepare('SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100')
-    rows = statement.execute(last_message_id, channel_id).to_a
+    rows = get_message_by_channel_id_and_last_message_id(channel_id, last_message_id: last_message_id)
 
     user_ids = rows.map{|h| h['user_id']}
     users = get_users_by_ids(user_ids)
@@ -213,9 +212,7 @@ class App < Sinatra::Base
     @page = @page.to_i
 
     n = 20
-    statement = db.prepare('SELECT * FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?')
-    rows = statement.execute(@channel_id, n, (@page - 1) * n).to_a
-    statement.close
+    rows = get_message_by_channel_id_and_last_message_id(@channel_id, offset: (@page - 1) * n, limit: n)
 
     user_ids = rows.map{|h| h['user_id']}
     users = get_users_by_ids(user_ids)
@@ -428,7 +425,14 @@ class App < Sinatra::Base
     messages
   end
 
-  def get_message_by_channel_id_and_last_message_id(channel_id, last_message_id, limit = 100)
+  def get_message_by_channel_id_and_last_message_id(channel_id, last_message_id: 0, limit: 100, offset: 0)
+    data = redis.zrevrangebyscore("messages:#{channel_id}", 100_000_000, (last_message_id.to_i + 1), :limit => [offset, limit])
+    puts data.size
+    if data
+      data.map{|d| d=JSON.load(d);d['created_at'] = Time.parse(d['created_at']);d}
+    else
+      nil
+    end
   end
 
   def channel_message_count(channel_id)
@@ -441,7 +445,7 @@ class App < Sinatra::Base
   end
 
   def get_channel_messge_count(channel_id)
-    redis.get("channel_message_count:#{id}").to_i
+    redis.get("channel_message_count:#{channel_id}").to_i
   end
 
   def get_channel_message_counts(channel_ids)
