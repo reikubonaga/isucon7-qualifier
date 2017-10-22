@@ -27,7 +27,7 @@ def main
   images = db.prepare('SELECT id, name, data FROM image').execute
   images.each do |image|
     puts "#{image['id']}: Creating... #{image_path(image)}"
-    File.write(image_path(image), image[:data])
+    File.write(image_path(image), image['data'])
     puts "#{image['id']}: Created!"
   end
 end
