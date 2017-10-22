@@ -52,6 +52,7 @@ class App < Sinatra::Base
   end
 
   get '/initialize' do
+    s = Time.now
     db.query("DELETE FROM user WHERE id > 1000")
     db.query("DELETE FROM image WHERE id > 1001")
     db.query("DELETE FROM channel WHERE id > 10")
@@ -62,6 +63,10 @@ class App < Sinatra::Base
 
     initialize_channel_message_count
     initialize_user
+
+    initialize_message
+
+    puts Time.now - s
 
     204
   end
@@ -141,6 +146,7 @@ class App < Sinatra::Base
 
     channel_id = params[:channel_id].to_i
     last_message_id = params[:last_message_id].to_i
+
     statement = db.prepare('SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100')
     rows = statement.execute(last_message_id, channel_id).to_a
 
@@ -391,19 +397,38 @@ class App < Sinatra::Base
     redis.set "users:#{user['id']}", user.to_json
   end
 
+  def initialize_message
+    messages = db.prepare('SELECT * FROM message').execute
+    messages.group_by{|h| h['channel_id']}.each do |channel_id, messages|
+      messages.each do |h|
+        redis.zadd *["messages:#{channel_id}", h['id'], h.to_json]
+      end
+    end
+  end
+
   def initialize_channel_message_count
     channel_count = db.prepare('SELECT channel_id, COUNT(*) AS cnt FROM message GROUP BY channel_id').execute
     redis.mset *channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
   end
 
   def db_add_message(channel_id, user_id, content)
-    statement = db.prepare('INSERT INTO message (channel_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())')
-    messages = statement.execute(channel_id, user_id, content)
-    statement.close
+
+    id = redis.incr "message_key"
+    data = {
+      id: id,
+      user_id: user_id,
+      channel_id: channel_id,
+      content: content,
+      created_at: Time.now,
+    }
+    redis.zadd "messages:#{channel_id}", data.to_json
 
     redis.incr "channel_message_count:#{channel_id}"
 
     messages
+  end
+
+  def get_message_by_channel_id_and_last_message_id(channel_id, last_message_id, limit = 100)
   end
 
   def channel_message_count(channel_id)
