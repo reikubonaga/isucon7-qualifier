@@ -23,5 +23,5 @@ echo 'Restart services...'
   # sudo systemctl restart redis.service
   # Save cache
   # sudo systemctl restart mysql.service
-  sudo systemctl restart isu.ruby.service
+  sudo systemctl restart isubata.ruby.service
 echo 'Restarted!'
