@@ -50,23 +50,34 @@ class App < Sinatra::Base
       @redis ||= Redis.current
     end
 
-    def channel_key(channel_id)
-      "channel:#{channel_id}"
+    def all_channel_ids_key
+      "all_channel_ids"
     end
 
-    def channel_key
-
-    def get_channel(channel_id)
-      redis.get(channel_key(channel_id))
+    def get_all_channel_ids
+      redis.get(all_channel_ids_key) || set_all_channel_ids
     end
 
-    def get_all_channels
-      db.query('SELECT id FROM channel').to_a
-      redis.get(channel_all_key)
+    def set_all_channel_ids
+      ids = db.query('SELECT id FROM channel').to_a.map{|row| row['id'] }
+      redis.set(all_channel_ids_key, ids)
+      ids
+    end
+
+    def all_channels_order_by_id_key
+      "all_channels_order_by_id"
     end
 
     def get_all_channels_order_by_id
-      db.query('SELECT * FROM channel ORDER BY id').to_a
+      redis.zrange(all_channels_order_by_id_key, 0, -1) || set_all_channels_order_by_id
+    end
+
+    def set_all_channels_order_by_id
+      channels = db.query('SELECT * FROM channel ORDER BY id').to_a
+      channels.each do |channel|
+        redis.zadd(all_channels_order_by_id_key, channel['id'], channel)
+      end
+      channels
     end
   end
 
@@ -189,8 +200,7 @@ class App < Sinatra::Base
 
     sleep 1.0
 
-    rows = get_all_channels
-    channel_ids = rows.map { |row| row['id'] }
+    channel_ids = get_all_channel_ids
 
     channel_message_counts = get_channel_message_counts(channel_ids)
     user_channel_message_counts = get_user_channel_message_counts(user_id, channel_ids)
