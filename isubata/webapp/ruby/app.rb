@@ -434,7 +434,7 @@ class App < Sinatra::Base
 
   def get_user_by_name(name)
     id = redis.get "user_name:#{name}"
-    user = redis.get("users:#{id}"))
+    user = redis.get("users:#{id}")
     user ? Oj.load(user) : user
   end
 
