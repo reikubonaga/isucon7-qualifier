@@ -386,11 +386,11 @@ class App < Sinatra::Base
   end
 
   def get_channel_message_counts(channel_ids)
-    redis.mget(channel_ids.map{|id| "channel_message_count:#{id}"}).map(&:to_i)
+    redis.mget(*channel_ids.map{|id| "channel_message_count:#{id}"}).map(&:to_i)
   end
 
   def get_user_channel_message_counts(user_id, channel_ids)
-    redis.mget(channel_ids.map{|id| "user_channel_message_count:#{user_id}:#{id}"}).map(&:to_i)
+    redis.mget(*channel_ids.map{|id| "user_channel_message_count:#{user_id}:#{id}"}).map(&:to_i)
   end
 
   def random_string(n)
