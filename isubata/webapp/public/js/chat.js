@@ -40,7 +40,7 @@ function fetch_unread(callback) {
         dataType: "json",
         async: true,
         type: "GET",
-        url: "/fetch",
+        url: "/fetch?lineprof=app.rb",
         success: callback
     })
 }
