@@ -299,7 +299,7 @@ class App < Sinatra::Base
         data = file[:tempfile].read
         digest = Digest::SHA1.hexdigest(data)
 
-        avatar_name = digest + Time.now.to_i + ext
+        avatar_name = "#{digest}#{Time.now.to_i}#{ext}"
         avatar_data = data
       end
     end
