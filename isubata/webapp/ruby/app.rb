@@ -263,7 +263,7 @@ class App < Sinatra::Base
     end
     @messages.reverse!
 
-    cnt = get_channel_messge_count(@channel_id)
+    cnt = get_channel_messge_count(@channel_id).to_f
     @max_page = cnt == 0 ? 1 :(cnt / n).ceil
 
     return 400 if @page > @max_page
@@ -426,7 +426,6 @@ class App < Sinatra::Base
 
   def initialize_user
     users = db.prepare('SELECT * FROM user').execute
-
     redis.set "user_key", users.size
     redis.mset users.map{|h| ["users:#{h['id']}", h.to_json]}.flatten
     redis.mset users.map{|h| ["user_name:#{h['name']}", h['id']]}.flatten
