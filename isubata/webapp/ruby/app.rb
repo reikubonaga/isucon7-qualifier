@@ -3,10 +3,11 @@ require 'mysql2'
 require 'sinatra/base'
 require 'redis'
 require 'pry'
-
-require 'redis'
+require 'rack-lineprof'
 
 class App < Sinatra::Base
+  use Rack::Lineprof
+
   configure do
     set :session_secret, 'tonymoris'
     set :public_folder, File.expand_path('../../public', __FILE__)
