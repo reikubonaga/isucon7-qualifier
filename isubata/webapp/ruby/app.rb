@@ -1,6 +1,7 @@
 require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
+require 'redis'
 
 class App < Sinatra::Base
   configure do
@@ -31,6 +32,10 @@ class App < Sinatra::Base
 
       @_user
     end
+
+    def redis
+      @redis ||= Redis.current
+    end
   end
 
   get '/initialize' do
@@ -39,6 +44,12 @@ class App < Sinatra::Base
     db.query("DELETE FROM channel WHERE id > 10")
     db.query("DELETE FROM message WHERE id > 10000")
     db.query("DELETE FROM haveread")
+
+    redis.flushall
+
+    channel_count = db.prepare('SELECT channel_id, COUNT(*) AS cnt FROM message GROUP BY channel_id').execute
+    redis.mset channel_count.map{|h| ["channel_message_count:#{h[:channel_id]}", h[:cnt]]}.flatten
+
     204
   end
 
