@@ -36,6 +36,14 @@ class App < Sinatra::Base
 
       @_user
     end
+
+    def image_file_path(filename)
+      "#{public_path}/image/#{filename}"
+    end
+
+    def public_path
+      File.expand_path('../../public', __FILE__)
+    end
   end
 
   get '/initialize' do
@@ -308,9 +316,7 @@ class App < Sinatra::Base
     end
 
     if !avatar_name.nil? && !avatar_data.nil?
-      statement = db.prepare('INSERT INTO image (name, data) VALUES (?, ?)')
-      statement.execute(avatar_name, avatar_data)
-      statement.close
+      File.write(image_file_path(avatar_name), avatar_data)
       statement = db.prepare('UPDATE user SET avatar_icon = ? WHERE id = ?')
       statement.execute(avatar_name, user['id'])
       statement.close
