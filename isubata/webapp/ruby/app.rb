@@ -379,6 +379,7 @@ class App < Sinatra::Base
   end
 
   def get_users_by_ids(ids)
+    return [] if ids.size == 0
     redis.mget(ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
   end
 
