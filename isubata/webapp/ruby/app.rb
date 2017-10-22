@@ -213,9 +213,7 @@ class App < Sinatra::Base
     end
     @messages.reverse!
 
-    statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?')
-    cnt = statement.execute(@channel_id).first['cnt'].to_f
-    statement.close
+    cnt = get_channel_messge_count(@channel_id)
     @max_page = cnt == 0 ? 1 :(cnt / n).ceil
 
     return 400 if @page > @max_page
@@ -383,6 +381,10 @@ class App < Sinatra::Base
   def set_user_channel_message_count(user_id, channel_id)
     count = channel_message_count(channel_id)
     redis.set "user_channel_message_count:#{user_id}:#{channel_id}", count
+  end
+
+  def get_channel_messge_count(channel_id)
+    redis.get("channel_message_count:#{id}").to_i
   end
 
   def get_channel_message_counts(channel_ids)
