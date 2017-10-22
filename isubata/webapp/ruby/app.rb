@@ -41,6 +41,14 @@ class App < Sinatra::Base
     def redis
       @redis ||= Redis.current
     end
+
+    def channel_key(channel_id)
+      "channel:#{channel_id}"
+    end
+
+    def get_channel(channel_id)
+      redis.get(channel_key(channel_id))
+    end
   end
 
   get '/initialize' do
