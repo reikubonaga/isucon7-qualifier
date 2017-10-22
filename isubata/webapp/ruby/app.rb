@@ -209,7 +209,7 @@ class App < Sinatra::Base
       return 403
     end
 
-    sleep 1.0
+    # sleep 1.0
 
     channel_ids = get_all_channel_ids
 
