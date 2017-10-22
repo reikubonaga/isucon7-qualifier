@@ -87,8 +87,8 @@ class App < Sinatra::Base
     end
     begin
       user_id = register(name, pw)
-    rescue Mysql2::Error => e
-      return 409 if e.error_number == 1062
+    rescue => e
+      return 409 if e.message == "register"
       raise e
     end
     session[:user_id] = user_id
@@ -101,8 +101,7 @@ class App < Sinatra::Base
 
   post '/login' do
     name = params[:name]
-    statement = db.prepare('SELECT * FROM user WHERE name = ?')
-    row = statement.execute(name).first
+    row = get_user_by_name(name)
     if row.nil? || row['password'] != Digest::SHA1.hexdigest(row['salt'] + params[:password])
       return 403
     end
@@ -201,16 +200,19 @@ class App < Sinatra::Base
     statement = db.prepare('SELECT * FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?')
     rows = statement.execute(@channel_id, n, (@page - 1) * n).to_a
     statement.close
+
+    user_ids = rows.map{|h| h['user_id']}
+    users = get_users_by_ids(user_ids)
+
     @messages = []
-    rows.each do |row|
+    rows.each_with_index do |row, index|
       r = {}
       r['id'] = row['id']
-      statement = db.prepare('SELECT name, display_name, avatar_icon FROM user WHERE id = ?')
-      r['user'] = statement.execute(row['user_id']).first
+
+      r['user'] = users[index]
       r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
       r['content'] = row['content']
       @messages << r
-      statement.close
     end
     @messages.reverse!
 
@@ -355,10 +357,12 @@ class App < Sinatra::Base
   end
 
   def db_get_user(user_id)
-    statement = db.prepare('SELECT * FROM user WHERE id = ?')
-    user = statement.execute(user_id).first
-    statement.close
-    user
+    user_data = redis.get "users:#{user_id}"
+    if user_data
+      JSON.load(user_data)
+    else
+      nil
+    end
   end
 
   def initialize_user
@@ -367,6 +371,15 @@ class App < Sinatra::Base
     redis.set "user_key", users.size
     redis.mset users.map{|h| ["users:#{h['id']}", h.to_json]}.flatten
     redis.mset users.map{|h| ["user_name:#{h['name']}", h['id']]}.flatten
+  end
+
+  def get_user_by_name(name)
+    id = redis.get "user_name:#{name}"
+    JSON.load(redis.get("users:#{id}"))
+  end
+
+  def get_users_by_ids(ids)
+    redis.mget(ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
   end
 
   def initialize_channel_message_count
@@ -409,11 +422,30 @@ class App < Sinatra::Base
   def register(user, password)
     salt = random_string(20)
     pass_digest = Digest::SHA1.hexdigest(salt + password)
-    statement = db.prepare('INSERT INTO user (name, salt, password, display_name, avatar_icon, created_at) VALUES (?, ?, ?, ?, ?, NOW())')
-    statement.execute(user, salt, pass_digest, user, 'default.png')
-    row = db.query('SELECT LAST_INSERT_ID() AS last_insert_id').first
-    statement.close
-    row['last_insert_id']
+
+    # 文字数
+    if user.length > 191
+      raise "register"
+    end
+
+    id = redis.get "user_name:#{user}"
+    if id
+      raise "register"
+    end
+
+    id = redis.incr "user_key"
+    data = {
+      id: id,
+      name: user,
+      salt: salt,
+      password: pass_digest,
+      display_name: user,
+      avatar_icon: 'default.png',
+    }
+    redis.set "users:#{id}", data.to_json
+    redis.set "user_name:#{user}", id
+
+    id
   end
 
   def get_channel_list_info(focus_channel_id = nil)
