@@ -6,7 +6,7 @@ require 'pry'
 require 'rack-lineprof'
 
 class App < Sinatra::Base
-  use Rack::Lineprof
+  use Rack::Lineprof, profile: 'app.rb'
 
   configure do
     set :session_secret, 'tonymoris'
