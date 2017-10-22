@@ -47,8 +47,7 @@ class App < Sinatra::Base
 
     redis.flushall
 
-    channel_count = db.prepare('SELECT channel_id, COUNT(*) AS cnt FROM message GROUP BY channel_id').execute
-    redis.mset channel_count.map{|h| ["channel_message_count:#{h[:channel_id]}", h[:cnt]]}.flatten
+    initialize_channel_message_count
 
     204
   end
@@ -144,13 +143,7 @@ class App < Sinatra::Base
     end
     response.reverse!
 
-    max_message_id = rows.empty? ? 0 : rows.map { |row| row['id'] }.max
-    statement = db.prepare([
-      'INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at) ',
-      'VALUES (?, ?, ?, NOW(), NOW()) ',
-      'ON DUPLICATE KEY UPDATE message_id = ?, updated_at = NOW()',
-    ].join)
-    statement.execute(user_id, channel_id, max_message_id, max_message_id)
+    set_user_channel_message_count(user_id, channel_id)
 
     content_type :json
     response.to_json
@@ -167,21 +160,14 @@ class App < Sinatra::Base
     rows = db.query('SELECT id FROM channel').to_a
     channel_ids = rows.map { |row| row['id'] }
 
+    channel_message_counts = get_channel_message_counts(channel_ids)
+    user_channel_message_counts = get_user_channel_message_counts(user_id, channel_ids)
+
     res = []
-    channel_ids.each do |channel_id|
-      statement = db.prepare('SELECT * FROM haveread WHERE user_id = ? AND channel_id = ?')
-      row = statement.execute(user_id, channel_id).first
-      statement.close
+    channel_ids.each_with_index do |channel_id, index|
       r = {}
       r['channel_id'] = channel_id
-      r['unread'] = if row.nil?
-        statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?')
-        statement.execute(channel_id).first['cnt']
-      else
-        statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ? AND ? < id')
-        statement.execute(channel_id, row['message_id']).first['cnt']
-      end
-      statement.close
+      r['unread'] = user_channel_message_counts[index] != 0 ? channel_message_counts[index] - user_channel_message_counts[index] : channel_message_counts[index]
       res << r
     end
 
@@ -252,7 +238,7 @@ class App < Sinatra::Base
     @self_profile = user['id'] == @user['id']
     erb :profile
   end
-  
+
   get '/add_channel' do
     if user.nil?
       return redirect '/login', 303
@@ -369,11 +355,37 @@ class App < Sinatra::Base
     user
   end
 
+  def initialize_channel_message_count
+    channel_count = db.prepare('SELECT channel_id, COUNT(*) AS cnt FROM message GROUP BY channel_id').execute
+    puts channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
+    redis.mset channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
+  end
+
   def db_add_message(channel_id, user_id, content)
     statement = db.prepare('INSERT INTO message (channel_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())')
     messages = statement.execute(channel_id, user_id, content)
     statement.close
+
+    redis.incr "channel_message_count:#{channel_id}"
+
     messages
+  end
+
+  def channel_message_count(channel_id)
+    redis.get "channel_message_count:#{channel_id}"
+  end
+
+  def set_user_channel_message_count(user_id, channel_id)
+    count = channel_message_count(channel_id)
+    redis.set "user_channel_message_count:#{user_id}:#{channel_id}", count
+  end
+
+  def get_channel_message_counts(channel_ids)
+    redis.mget(channel_ids.map{|id| "channel_message_count:#{id}"}).map(&:to_i)
+  end
+
+  def get_user_channel_message_counts(user_id, channel_ids)
+    redis.mget(channel_ids.map{|id| "user_channel_message_count:#{user_id}:#{id}"}).map(&:to_i)
   end
 
   def random_string(n)
