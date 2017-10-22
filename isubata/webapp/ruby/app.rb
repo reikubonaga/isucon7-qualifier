@@ -363,7 +363,7 @@ class App < Sinatra::Base
   def initialize_channel_message_count
     channel_count = db.prepare('SELECT channel_id, COUNT(*) AS cnt FROM message GROUP BY channel_id').execute
     puts channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
-    redis.mset channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
+    redis.mset *channel_count.map{|h| ["channel_message_count:#{h['channel_id']}", h['cnt']]}.flatten
   end
 
   def db_add_message(channel_id, user_id, content)
