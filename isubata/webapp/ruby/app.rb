@@ -2,6 +2,8 @@ require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
 
+require 'redis'
+
 class App < Sinatra::Base
   configure do
     set :session_secret, 'tonymoris'
@@ -244,7 +246,7 @@ class App < Sinatra::Base
     @self_profile = user['id'] == @user['id']
     erb :profile
   end
-  
+
   get '/add_channel' do
     if user.nil?
       return redirect '/login', 303
