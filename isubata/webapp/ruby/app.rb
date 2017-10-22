@@ -3,6 +3,7 @@ require 'mysql2'
 require 'sinatra/base'
 require 'redis'
 require 'pry'
+require 'oj'
 
 require 'redis'
 
@@ -58,7 +59,7 @@ class App < Sinatra::Base
     def get_all_channel_ids
       ids_json = redis.get(all_channel_ids_key)
       if ids_json
-        JSON.parse(ids_json)
+        Oj.load(ids_json)
       else
         set_all_channel_ids
       end
@@ -79,7 +80,7 @@ class App < Sinatra::Base
       if rows.length == 0
         set_all_channels_order_by_id
       else
-        rows.map {|row| JSON.parse(row) }
+        rows.map {|row| Oj.load(row) }
       end
     end
 
@@ -418,7 +419,7 @@ class App < Sinatra::Base
   def db_get_user(user_id)
     user_data = redis.get "users:#{user_id}"
     if user_data
-      JSON.load(user_data)
+      Oj.load(user_data)
     else
       nil
     end
@@ -433,12 +434,12 @@ class App < Sinatra::Base
 
   def get_user_by_name(name)
     id = redis.get "user_name:#{name}"
-    JSON.load(redis.get("users:#{id}"))
+    Oj.load(redis.get("users:#{id}"))
   end
 
   def get_users_by_ids(ids)
     return [] if ids.size == 0
-    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
+    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| Oj.load(d)}
   end
 
   def set_user(user)
@@ -481,7 +482,7 @@ class App < Sinatra::Base
     data = redis.zrevrangebyscore("messages:#{channel_id}", 100_000_000, (last_message_id.to_i + 1), :limit => [offset, limit])
 
     if data
-      data.map{|d| d=JSON.load(d);d['created_at'] = Time.parse(d['created_at']);d}
+      data.map{|d| d=Oj.load(d);d['created_at'] = Time.parse(d['created_at']);d}
     else
       nil
     end
