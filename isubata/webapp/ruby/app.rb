@@ -434,12 +434,13 @@ class App < Sinatra::Base
 
   def get_user_by_name(name)
     id = redis.get "user_name:#{name}"
-    Oj.load(redis.get("users:#{id}"))
+    user = redis.get("users:#{id}"))
+    user ? Oj.load(user) : user
   end
 
   def get_users_by_ids(ids)
     return [] if ids.size == 0
-    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| Oj.load(d)}
+    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| d ? Oj.load(d) : d }
   end
 
   def set_user(user)
