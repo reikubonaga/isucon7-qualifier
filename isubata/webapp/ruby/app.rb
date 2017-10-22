@@ -2,6 +2,7 @@ require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
 require 'redis'
+require 'pry'
 
 require 'redis'
 
