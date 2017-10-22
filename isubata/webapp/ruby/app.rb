@@ -38,6 +38,14 @@ class App < Sinatra::Base
       @_user
     end
 
+    def image_file_path(filename)
+      "#{public_path}/icons/#{filename}"
+    end
+
+    def public_path
+      File.expand_path('../../public', __FILE__)
+    end
+
     def redis
       @redis ||= Redis.current
     end
@@ -302,15 +310,13 @@ class App < Sinatra::Base
         data = file[:tempfile].read
         digest = Digest::SHA1.hexdigest(data)
 
-        avatar_name = digest + ext
+        avatar_name = "#{digest}#{Time.now.to_i}#{ext}"
         avatar_data = data
       end
     end
 
     if !avatar_name.nil? && !avatar_data.nil?
-      statement = db.prepare('INSERT INTO image (name, data) VALUES (?, ?)')
-      statement.execute(avatar_name, avatar_data)
-      statement.close
+      File.write(image_file_path(avatar_name), avatar_data)
       statement = db.prepare('UPDATE user SET avatar_icon = ? WHERE id = ?')
       statement.execute(avatar_name, user['id'])
       statement.close
@@ -325,19 +331,20 @@ class App < Sinatra::Base
     redirect '/', 303
   end
 
-  get '/icons/:file_name' do
-    file_name = params[:file_name]
-    statement = db.prepare('SELECT * FROM image WHERE name = ?')
-    row = statement.execute(file_name).first
-    statement.close
-    ext = file_name.include?('.') ? File.extname(file_name) : ''
-    mime = ext2mime(ext)
-    if !row.nil? && !mime.empty?
-      content_type mime
-      return row['data']
-    end
-    404
-  end
+  # Deprecated
+  # get '/icons/:file_name' do
+  #   file_name = params[:file_name]
+  #   statement = db.prepare('SELECT * FROM image WHERE name = ?')
+  #   row = statement.execute(file_name).first
+  #   statement.close
+  #   ext = file_name.include?('.') ? File.extname(file_name) : ''
+  #   mime = ext2mime(ext)
+  #   if !row.nil? && !mime.empty?
+  #     content_type mime
+  #     return row['data']
+  #   end
+  #   404
+  # end
 
   private
 

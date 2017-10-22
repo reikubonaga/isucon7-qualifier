@@ -13,6 +13,8 @@
 # rotate_and_cp.sh
 # ruby_log.sh
 
+isubata/webapp/public/icons/
+
 # isubata/
 isubata/db
 isubata/webapp/go
