@@ -318,17 +318,14 @@ class App < Sinatra::Base
     if !avatar_name.nil? && !avatar_data.nil?
       File.write(image_file_path(avatar_name), avatar_data)
 
-
-      statement = db.prepare('UPDATE user SET avatar_icon = ? WHERE id = ?')
-      statement.execute(avatar_name, user['id'])
-      statement.close
+      user["avatar_icon"] = avatar_name
     end
 
     if !display_name.nil? || !display_name.empty?
-      statement = db.prepare('UPDATE user SET display_name = ? WHERE id = ?')
-      statement.execute(display_name, user['id'])
-      statement.close
+      user["display_name"] = display_name
     end
+
+    set_user(user)
 
     redirect '/', 303
   end
@@ -393,7 +390,7 @@ class App < Sinatra::Base
   end
 
   def set_user(user)
-
+    redis.set "users:#{user['id']}", user.to_json
   end
 
   def initialize_channel_message_count
