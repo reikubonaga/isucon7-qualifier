@@ -317,6 +317,8 @@ class App < Sinatra::Base
 
     if !avatar_name.nil? && !avatar_data.nil?
       File.write(image_file_path(avatar_name), avatar_data)
+
+
       statement = db.prepare('UPDATE user SET avatar_icon = ? WHERE id = ?')
       statement.execute(avatar_name, user['id'])
       statement.close
@@ -387,7 +389,11 @@ class App < Sinatra::Base
 
   def get_users_by_ids(ids)
     return [] if ids.size == 0
-    redis.mget(ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
+    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
+  end
+
+  def set_user(user)
+
   end
 
   def initialize_channel_message_count
@@ -416,11 +422,11 @@ class App < Sinatra::Base
   end
 
   def get_channel_message_counts(channel_ids)
-    redis.mget(channel_ids.map{|id| "channel_message_count:#{id}"}).map(&:to_i)
+    redis.mget(*channel_ids.map{|id| "channel_message_count:#{id}"}).map(&:to_i)
   end
 
   def get_user_channel_message_counts(user_id, channel_ids)
-    redis.mget(channel_ids.map{|id| "user_channel_message_count:#{user_id}:#{id}"}).map(&:to_i)
+    redis.mget(*channel_ids.map{|id| "user_channel_message_count:#{user_id}:#{id}"}).map(&:to_i)
   end
 
   def random_string(n)
