@@ -309,11 +309,29 @@ class App < Sinatra::Base
     if name.nil? || description.nil?
       return 400
     end
-    statement = db.prepare('INSERT INTO channel (name, description, updated_at, created_at) VALUES (?, ?, NOW(), NOW())')
-    statement.execute(name, description)
-    channel_id = db.last_id
-    statement.close
-    redirect "/channel/#{channel_id}", 303
+    # statement = db.prepare('INSERT INTO channel (name, description, updated_at, created_at) VALUES (?, ?, NOW(), NOW())')
+    # statement.execute(name, description)
+    # channel_id = db.last_id
+    # statement.close
+
+    # Save channel
+    _channel, id = redis.zrange(all_channels_order_by_id_key, -1, -1, with_scores: true).last # get max id
+    new_id = id.to_i + 1
+    now = Time.now
+    attributes = {
+      'id': new_id,
+      'name': name,
+      'description': description,
+      'updated_at': now.to_s,
+      'created_at': now.to_s,
+    }
+    redis.zadd(all_channels_order_by_id_key, [new_id, attributes.to_json])
+
+    # Refresh all_channel_ids
+    ids = get_all_channel_ids << new_id
+    redis.set(all_channel_ids_key, ids)
+
+    redirect "/channel/#{new_id}", 303
   end
 
   post '/profile' do
