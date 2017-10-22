@@ -150,6 +150,6 @@ $(document).ready(function() {
                   loading = false
                 }
             })
-        }, 10)
+        }, 1000)
     })
 })
