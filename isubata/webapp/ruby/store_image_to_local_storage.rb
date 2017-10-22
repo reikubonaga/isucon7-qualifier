@@ -20,7 +20,7 @@ def public_folder
 end
 
 def image_path(image)
-  "#{public_folder}/#{image['name']}"
+  "#{public_folder}/image/#{image['name']}"
 end
 
 def main
