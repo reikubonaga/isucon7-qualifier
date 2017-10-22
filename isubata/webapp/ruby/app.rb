@@ -447,6 +447,8 @@ class App < Sinatra::Base
 
   def initialize_message
     messages = db.prepare('SELECT * FROM message').execute
+
+    redis.set "message_key", messages.size
     messages.group_by{|h| h['channel_id']}.each do |channel_id, messages|
       messages.each do |h|
         redis.zadd *["messages:#{channel_id}", h['id'], h.to_json]
@@ -469,11 +471,10 @@ class App < Sinatra::Base
       content: content,
       created_at: Time.now,
     }
-    redis.zadd "messages:#{channel_id}", data.to_json
-
+    redis.zadd "messages:#{channel_id}", id, data.to_json
     redis.incr "channel_message_count:#{channel_id}"
 
-    messages
+    data
   end
 
   def get_message_by_channel_id_and_last_message_id(channel_id, last_message_id: 0, limit: 100, offset: 0)
