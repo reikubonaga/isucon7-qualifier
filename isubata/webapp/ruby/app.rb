@@ -135,16 +135,18 @@ class App < Sinatra::Base
     last_message_id = params[:last_message_id].to_i
     statement = db.prepare('SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100')
     rows = statement.execute(last_message_id, channel_id).to_a
+
+    user_ids = rows.map{|h| h['user_id']}
+    users = get_users_by_ids(user_ids)
+
     response = []
-    rows.each do |row|
+    rows.each_with_index do |row, index|
       r = {}
       r['id'] = row['id']
-      statement = db.prepare('SELECT name, display_name, avatar_icon FROM user WHERE id = ?')
-      r['user'] = statement.execute(row['user_id']).first
+      r['user'] = users[index]
       r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
       r['content'] = row['content']
       response << r
-      statement.close
     end
     response.reverse!
 
@@ -235,9 +237,7 @@ class App < Sinatra::Base
     @channels, = get_channel_list_info
 
     user_name = params[:user_name]
-    statement = db.prepare('SELECT * FROM user WHERE name = ?')
-    @user = statement.execute(user_name).first
-    statement.close
+    @user = get_user_by_name(user_name)
 
     if @user.nil?
       return 404
