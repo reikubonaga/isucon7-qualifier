@@ -91,7 +91,6 @@ class App < Sinatra::Base
   end
 
   get '/initialize' do
-    s = Time.now
     db.query("DELETE FROM user WHERE id > 1000")
     db.query("DELETE FROM image WHERE id > 1001")
     db.query("DELETE FROM channel WHERE id > 10")
@@ -102,10 +101,7 @@ class App < Sinatra::Base
 
     initialize_channel_message_count
     initialize_user
-
     initialize_message
-
-    puts Time.now - s
 
     204
   end
@@ -483,7 +479,7 @@ class App < Sinatra::Base
 
   def get_message_by_channel_id_and_last_message_id(channel_id, last_message_id: 0, limit: 100, offset: 0)
     data = redis.zrevrangebyscore("messages:#{channel_id}", 100_000_000, (last_message_id.to_i + 1), :limit => [offset, limit])
-    puts data.size
+
     if data
       data.map{|d| d=JSON.load(d);d['created_at'] = Time.parse(d['created_at']);d}
     else
