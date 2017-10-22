@@ -79,13 +79,13 @@ class App < Sinatra::Base
       if rows.length == 0
         set_all_channels_order_by_id
       else
-        rows
+        rows.map {|row| JSON.parse(row) }
       end
     end
 
     def set_all_channels_order_by_id
       channels = db.query('SELECT * FROM channel ORDER BY id').to_a
-      redis.zadd(all_channels_order_by_id_key, channels.map{ |c| [c['id'], c] })
+      redis.zadd(all_channels_order_by_id_key, channels.map{ |c| [c['id'], c.to_json] })
       channels
     end
   end
