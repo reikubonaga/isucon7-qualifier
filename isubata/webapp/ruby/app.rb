@@ -53,6 +53,7 @@ class App < Sinatra::Base
     redis.flushall
 
     initialize_channel_message_count
+    initialize_user
 
     204
   end
@@ -358,6 +359,14 @@ class App < Sinatra::Base
     user = statement.execute(user_id).first
     statement.close
     user
+  end
+
+  def initialize_user
+    users = db.prepare('SELECT * FROM user').execute
+
+    redis.set "user_key", users.size
+    redis.mset users.map{|h| ["users:#{h['id']}", h.to_json]}.flatten
+    redis.mset users.map{|h| ["user_name:#{h['name']}", h['id']]}.flatten
   end
 
   def initialize_channel_message_count
