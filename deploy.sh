@@ -12,16 +12,17 @@ echo 'Updateed config file!'
 
 if [ "$1" = "--bundle" ]; then
   echo 'Start bundle install...'
-  cd "$HOME/webapp/ruby"
-  bundle install
+  cd /home/isucon/isubata/webapp/ruby
+  /home/isucon/local/ruby/bin/bundle install
   cd "$HOME"
   echo 'bundle install finished!'
 fi
 
+# TODO(south37) Only in host1 and host2
 echo 'Restart services...'
   sudo systemctl restart nginx.service
   # sudo systemctl restart redis.service
   # Save cache
   # sudo systemctl restart mysql.service
-  sudo systemctl restart isu.ruby.service
+  sudo systemctl restart isubata.ruby.service
 echo 'Restarted!'

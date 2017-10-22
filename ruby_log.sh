@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo journalctl -u isu.service
+sudo journalctl -u isubata.ruby.service
