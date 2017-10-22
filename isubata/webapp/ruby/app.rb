@@ -331,6 +331,7 @@ class App < Sinatra::Base
     redirect '/', 303
   end
 
+  # Deprecated
   get '/icons/:file_name' do
     file_name = params[:file_name]
     statement = db.prepare('SELECT * FROM image WHERE name = ?')
