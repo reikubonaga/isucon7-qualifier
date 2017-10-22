@@ -209,8 +209,6 @@ class App < Sinatra::Base
       return 403
     end
 
-    sleep 1.0
-
     channel_ids = get_all_channel_ids
 
     channel_message_counts = get_channel_message_counts(channel_ids)
