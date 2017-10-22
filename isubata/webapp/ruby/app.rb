@@ -3,6 +3,8 @@ require 'mysql2'
 require 'sinatra/base'
 require 'redis'
 
+require 'redis'
+
 class App < Sinatra::Base
   configure do
     set :session_secret, 'tonymoris'
@@ -10,6 +12,9 @@ class App < Sinatra::Base
     set :avatar_max_size, 1 * 1024 * 1024
 
     enable :sessions
+
+    redis = Redis.new(host: ENV["REDIS_HOST"])
+    Redis.current = redis
   end
 
   configure :development do

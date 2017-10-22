@@ -80,4 +80,3 @@ name = "js"
 [[bundle]]
 regexp = '^(GET|HEAD) /fonts/'
 name = "fonts"
-
