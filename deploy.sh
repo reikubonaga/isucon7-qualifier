@@ -12,8 +12,8 @@ echo 'Updateed config file!'
 
 if [ "$1" = "--bundle" ]; then
   echo 'Start bundle install...'
-  cd "$HOME/webapp/ruby"
-  bundle install
+  cd /home/isucon/isubata/webapp/ruby
+  /home/isucon/local/ruby/bin/bundle install
   cd "$HOME"
   echo 'bundle install finished!'
 fi
