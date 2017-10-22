@@ -38,7 +38,7 @@ class App < Sinatra::Base
     end
 
     def image_file_path(filename)
-      "#{public_path}/image/#{filename}"
+      "#{public_path}/icons/#{filename}"
     end
 
     def public_path
