@@ -4,6 +4,7 @@ require 'sinatra/base'
 require 'redis'
 require 'pry'
 require 'rack-lineprof'
+require 'oj'
 
 class App < Sinatra::Base
   use Rack::Lineprof, profile: 'app.rb'
@@ -439,7 +440,7 @@ class App < Sinatra::Base
 
   def get_users_by_ids(ids)
     return [] if ids.size == 0
-    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| JSON.load(d)}
+    redis.mget(*ids.map{|id| "users:#{id}"}).map{|d| Oj.load(d)}
   end
 
   def set_user(user)
