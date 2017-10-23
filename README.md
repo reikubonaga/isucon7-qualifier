@@ -32,7 +32,7 @@
 
 ## ベンチを回す時のフロー
 
-1. `git fetch orogin [branch] && git checkout [branch]` で対象 branch へ移動
+1. `git fetch origin [branch] && git checkout [branch]` で対象 branch へ移動
 2. `./deploy.sh` でデプロイ
 3. ブラウザで挙動を確認、`./ruby_log.sh` でエラーが出てないことを確認
 4. ベンチマーク実行開始
