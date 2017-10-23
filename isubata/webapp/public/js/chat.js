@@ -40,7 +40,7 @@ function fetch_unread(callback) {
         dataType: "json",
         async: true,
         type: "GET",
-        url: "/fetch",
+        url: "/fetch?lineprof=app.rb",
         success: callback
     })
 }
@@ -63,7 +63,7 @@ function get_message(callback) {
         dataType: "json",
         async: true,
         type: "GET",
-        url: "/message",
+        url: "/message?lineprof=app.rb",
         data: {
             last_message_id: last_message_id,
             channel_id: channel_id
@@ -84,7 +84,7 @@ function post_message(msg) {
     $.ajax({
         async: true,
         type: "POST",
-        url: "/message",
+        url: "/message?lineprof=app.rb",
         data: {
             channel_id: channel_id,
             message: msg
